@@ -55,3 +55,26 @@ RUN apt-get update \
 # (for example because a shared library is missing).
 RUN arm-none-eabi-gcc --version \
  && arm-none-eabi-gdb --version
+
+# -----------------------------------------------------------------------------
+# VS Code Dev Containers configuration
+# -----------------------------------------------------------------------------
+# Dev Containers reads this label and merges it with the project's
+# devcontainer.json (the project's file wins on conflicts).
+# The value must be valid JSON, so comments go here, not inside it.
+# Extensions installed inside the container on first start:
+#   clangd        code navigation, completion, live clang-tidy warnings
+#   CMake Tools   configure and build with CubeMX's CMakePresets.json
+#   Cortex-Debug  debugging over GDB, peripheral registers from the SVD
+# Kept last: changing it only rebuilds this step.
+LABEL devcontainer.metadata='[{ \
+  "customizations": { \
+    "vscode": { \
+      "extensions": [ \
+        "llvm-vs-code-extensions.vscode-clangd", \
+        "ms-vscode.cmake-tools", \
+        "marus25.cortex-debug" \
+      ] \
+    } \
+  } \
+}]'

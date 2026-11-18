@@ -33,11 +33,12 @@ Debug probe setup (ST-Link driver, GDB server) is described in
 From the repository root:
 
 ```bash
-docker build -t stm32-devenv .
+docker build -t stm32-devenv image/
 ```
 
 `-t stm32-devenv` gives the image a name (a *tag*) so you can refer to it later.
-The `.` tells Docker to use the `Dockerfile` in the current folder.
+`image/` is the *build context*: the folder Docker builds from. It contains
+the `Dockerfile`.
 
 ## Using the image in a project
 
