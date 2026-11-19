@@ -38,13 +38,21 @@ ENV PATH="/opt/arm-gnu-toolchain/bin:${PATH}"
 # -----------------------------------------------------------------------------
 # update + install + cleanup are in one RUN so they end up in one layer, and
 # the downloaded package lists never get stored in the image.
+#   gcc, g++           native compilers, for unit tests that run on the PC
+#   python3-pip        installs a project's Python packages (see the
+#                      postCreateCommand in the label below)
+#   python-is-python3  makes "python" run python3, as scripts and tasks expect
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       tzdata \
       git \
       cmake \
       ninja-build \
+      gcc \
+      g++ \
       python3 \
+      python3-pip \
+      python-is-python3 \
       clang-tidy \
       clang-format \
       clangd \
@@ -53,8 +61,11 @@ RUN apt-get update \
 
 # Smoke test: fail the build right away if the compiler or debugger can't start
 # (for example because a shared library is missing).
-RUN arm-none-eabi-gcc --version \
- && arm-none-eabi-gdb --version
+RUN arm-none-eabi-gcc --version && arm-none-eabi-gdb --version
+
+# Make CMake write compile_commands.json for every project (clangd, clang-tidy
+# and cppcheck read it). Works from VS Code and from the command line.
+ENV CMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 # -----------------------------------------------------------------------------
 # VS Code Dev Containers configuration
@@ -62,19 +73,59 @@ RUN arm-none-eabi-gcc --version \
 # Dev Containers reads this label and merges it with the project's
 # devcontainer.json (the project's file wins on conflicts).
 # The value must be valid JSON, so comments go here, not inside it.
+# remoteUser: VS Code and its terminals run as the normal "ubuntu" user
+#   (uid 1000, part of the Ubuntu base image) instead of root. On Linux hosts,
+#   Dev Containers changes its uid to match yours, so files created in the
+#   project (build/, ...) belong to you, not root.
+# postCreateCommand: runs once, when a container is created for a project.
+#   git-safe-directory   the project folder is mounted from the host and owned
+#                        by another user id, which git refuses ("dubious
+#                        ownership") unless the folder is marked as safe
+#   python-requirements  if the project has .devcontainer/requirements.txt,
+#                        install those Python packages for the ubuntu user
 # Extensions installed inside the container on first start:
 #   clangd        code navigation, completion, live clang-tidy warnings
 #   CMake Tools   configure and build with CubeMX's CMakePresets.json
 #   Cortex-Debug  debugging over GDB, peripheral registers from the SVD
+# Settings:
+#   clangd.path       use the clangd installed in this image (no download prompt)
+#   --query-driver    allow clangd to ask arm-none-eabi-gcc for its built-in
+#                     include paths and target, so <stdint.h> etc. are found
+#   --completion-style=detailed  one completion entry per overload, with full
+#                     signature
+#   --pch-storage=memory  keep clangd's precompiled headers in RAM (faster)
+#   C_Cpp.intelliSenseEngine  disable Microsoft C/C++ IntelliSense, in case
+#                     another extension installs it; it conflicts with clangd
+#   cmake.configureOnOpen     configure the project when it is opened, so
+#                             compile_commands.json exists right away
+#   cmake.copyCompileCommands copy compile_commands.json from the active
+#                             build folder (e.g. build/Debug) to the project
+#                             root, where clangd looks for it
 # Kept last: changing it only rebuilds this step.
 LABEL devcontainer.metadata='[{ \
+  "remoteUser": "ubuntu", \
+  "postCreateCommand": { \
+    "git-safe-directory": "git config --global --add safe.directory ${containerWorkspaceFolder}", \
+    "python-requirements": "if [ -f .devcontainer/requirements.txt ]; then pip install --user --break-system-packages -r .devcontainer/requirements.txt; fi" \
+  }, \
   "customizations": { \
     "vscode": { \
       "extensions": [ \
         "llvm-vs-code-extensions.vscode-clangd", \
         "ms-vscode.cmake-tools", \
         "marus25.cortex-debug" \
-      ] \
+      ], \
+      "settings": { \
+        "clangd.path": "/usr/bin/clangd", \
+        "clangd.arguments": [ \
+          "--query-driver=/opt/arm-gnu-toolchain/bin/arm-none-eabi-*", \
+          "--completion-style=detailed", \
+          "--pch-storage=memory" \
+        ], \
+        "C_Cpp.intelliSenseEngine": "disabled", \
+        "cmake.configureOnOpen": true, \
+        "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json" \
+      } \
     } \
   } \
 }]'

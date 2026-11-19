@@ -1,0 +1,17 @@
+// Dev container for this project.
+// Reference: https://containers.dev/implementors/json_reference/
+//
+// Most of the configuration (VS Code extensions and their settings) comes from
+// the stm32-devenv image itself and is merged with this file. Anything set
+// here overrides the image's defaults for this project only.
+{
+  // Shown in VS Code's status bar and window title while connected.
+  "name": "STM32",
+
+  // Optional: use your local time zone instead of UTC inside the container.
+  // "containerEnv": { "TZ": "Europe/Ljubljana" },
+
+  // The image to use. Build it locally from the stm32-devenv repo with:
+  //   docker build -t stm32-devenv image/
+  "image": "stm32-devenv"
+}

@@ -1,0 +1,12 @@
+# Build output (CMake presets write to build/Debug, build/Release, ...)
+build/
+
+# Copied from the active build folder by CMake Tools; contains absolute
+# container paths and changes with the selected preset
+compile_commands.json
+
+# clangd's index (.cache/clangd/)
+.cache/
+
+# Python bytecode from project scripts
+__pycache__/

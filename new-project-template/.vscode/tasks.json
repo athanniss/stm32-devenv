@@ -1,0 +1,46 @@
+// VS Code tasks for this project: Terminal > Run Task... (or any task runner).
+// They run inside the dev container and analyse only our own code in src/.
+// Building is done with CMake Tools (F7 or the Build button in the status bar).
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run: clang-tidy (all files)",
+      "detail": "clang-tidy on every file in src/, in parallel, including the static analyzer",
+      "type": "shell",
+      // -p .   compile_commands.json is in the project root
+      // "/src/" regex: only files whose path contains /src/
+      "command": "run-clang-tidy -p . -quiet '/src/'",
+      "problemMatcher": "$gcc",
+      "presentation": { "clear": true }
+    },
+    {
+      "label": "Run: clang-tidy (current file)",
+      "detail": "clang-tidy on the file open in the editor, including the static analyzer",
+      "type": "shell",
+      "command": "clang-tidy -p . '${file}'",
+      "problemMatcher": "$gcc",
+      "presentation": { "clear": true }
+    },
+    {
+      "label": "Run: cppcheck",
+      "detail": "cppcheck on every file in src/",
+      "type": "shell",
+      // --platform        type sizes of 32-bit ARM, not of the host PC
+      // --suppress        no findings located in HAL/CMSIS headers
+      // --template=gcc    file:line:col: warning: ... (read by $gcc below)
+      // --cppcheck-build-dir  cache, so unchanged files are not re-analysed
+      "command": "mkdir -p build/cppcheck && cppcheck --project=compile_commands.json '--file-filter=*/src/*' --platform=arm32-wchar_t4 --enable=warning,style,performance,portability --inline-suppr '--suppress=*:*/Drivers/*' --template=gcc -q --cppcheck-build-dir=build/cppcheck",
+      "problemMatcher": "$gcc",
+      "presentation": { "clear": true }
+    },
+    {
+      "label": "Clean: build output",
+      "detail": "Delete build/ (objects, ELF, CMake cache) and the copied compile_commands.json",
+      "type": "shell",
+      "command": "rm -rf build compile_commands.json",
+      "problemMatcher": [],
+      "presentation": { "clear": true }
+    }
+  ]
+}

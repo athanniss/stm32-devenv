@@ -1,0 +1,4 @@
+# Store text files with LF line endings, both in the repo and in the working
+# folder. Files are shared between Windows and the Linux container, and Linux
+# tools expect LF.
+* text=auto eol=lf
